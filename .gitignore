@@ -1,0 +1,15 @@
+# Backup files
+*~
+
+# no archive files
+*.zip
+*.7z
+*.rar
+*.tar.gz
+*.tar.bz2
+
+# no netrwhistory
+.netrwhist
+
+# Mac specific
+.DS_Store
