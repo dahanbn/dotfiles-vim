@@ -1,5 +1,17 @@
 vim9script
 
+###########################################################################               
+#               
+#               ██╗   ██╗██╗███╗   ███╗██████╗  ██████╗
+#               ██║   ██║██║████╗ ████║██╔══██╗██╔════╝
+#               ██║   ██║██║██╔████╔██║██████╔╝██║     
+#               ╚██╗ ██╔╝██║██║╚██╔╝██║██╔══██╗██║     
+#                ╚████╔╝ ██║██║ ╚═╝ ██║██║  ██║╚██████╗
+#                 ╚═══╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝
+#               
+###########################################################################          
+
+
 # USEFUL INFO & LINKS ----------------------------------------------------- {{{
 
 # https://github.com/saccarosium/awesome-vim9 # Vim9 Script Plugins
@@ -16,16 +28,14 @@ autocmd FileType vim setlocal expandtab
 autocmd FileType vim setlocal shiftwidth=2
 autocmd FileType vim setlocal softtabstop=2
 
-# ConfigSetENV on what OS does Vim run -------------------------- {{{
+# ConfigSetENV on what OS does Vim run ----------i---------------- {{{
 
 # The function needs to be near the top since it has to be known for later use
 
 # Sets only once the value of g:Env to the running environment
-# from romainl
-# https://gist.github.com/romainl/4df4cde3498fada91032858d7af213c2
 
 def ConfigSetEnv()
-  if exists('g:My_ENV')
+  if exists('g:My_Env')
     return
   endif
   # win64 implies win32
@@ -43,7 +53,21 @@ enddef
 
 ConfigSetEnv()
 
-# echowindow $"has('win64') == {has('win64')}"
+# setting some variables depending on my OS
+
+# var g:my_vimfiles_directory: string
+
+if g:My_Env == 'WINDOWS'
+  g:my_vimfiles_dir = expand('~/vimfiles')
+elseif g:My_Env == 'DARWIN'
+  g:my_vimfiles_dir = expand('~/.vim')
+elseif g:My_Env == 'LINUX'
+  g:my_vimfiles_dir = expand('~/.vim')
+else
+  g:my_vimfiles_dir = expand('~/.vim')
+  echoerr 'Config_setEnv: Unable to set my_vimfiles_directory according to the OS.'
+endif
+
 # }}}
 
 # }}}
@@ -56,8 +80,9 @@ var my_plug_directory: string
 if g:My_Env == 'WINDOWS'
   my_plug_directory = expand('~/vimfiles/plugged') 
 else
-  # probably needs modification on Linux and MacOS 
-  my_plug_directory = expand('~/vim/plugged')
+  # probably needs modification on Linux and MacOS
+  # works on Darwin, has to check on Linux
+  my_plug_directory = expand('~/.vim/plugged')
 endif
 
 plug#begin(my_plug_directory)
@@ -120,7 +145,19 @@ Plug 'tpope/vim-obsession'
 # defining Startify Bookmarks
 # don't use mappings provide in startify-mappings
 # e.g. q, e, i, b, s, v, t
-g:startify_bookmarks = [ {'z': '~/.zshrc'}, {'l': '~/Library/Mobile Documents/com~apple~CloudDocs/!dh/dh-letters/' }]
+
+if g:My_Env == 'WINDOWS'
+  # to be defined
+elseif g:My_Env == 'DARWIN'
+  g:startify_bookmarks = [  
+                            {'c': '~/repos/dotfiles-vim/vimrc'}, 
+                            {'d': '~/repos/dotfiles-vim/'}, 
+                            {'z': '~/.zshrc'}, 
+                            {'l': '~/Library/Mobile Documents/com~apple~CloudDocs/!dh/dh-letters/' },
+                            {'o': '~/vaults/' },
+                            {'r': '~/repos/' },
+                          ]
+endif
 
 # setting a custom footer
 g:startify_custom_footer = ['Remember, ,v for editing .vimrc and ,u for updating it!']
@@ -231,6 +268,65 @@ augroup filetype_vim
   autocmd FileType vim setlocal foldmethod=marker
 augroup END
 
+# a function that inserts the date 
+def Today()
+  var today = strftime("%A %m\/%d\/%Y")
+  exe "normal a" .. today
+enddef
+command! Today Today()
+
+
+# a function that inserts the date 
+def Heute()
+  var heute = strftime("%A %m.%d.%Y")
+  exe "normal a" .. heute
+enddef
+command! Heute Heute()
+
+# Vim's swap, backup, and undo file storage
+# Vim’s various temporary files look like this:
+#
+# foo.txt       <-- original file
+# .foo.txt.swp  <-- Vim's swap file
+# .foo.txt.un~  <-- Vim's undo file
+# foo.txt~      <-- Vim's backup file
+
+# set undodir=~/.vim/backup 
+# set doesn't work with variables
+
+var my_state_dir: string
+
+if g:My_Env == "WINDOWS"
+  my_state_dir = g:my_vimfiles_dir .. '/state'
+else
+  my_state_dir = expand('~/.local/state/vim')
+endif
+
+# setting undo dir
+&undodir = my_state_dir .. '/undo/'
+mkdir(&undodir, 'p')        # create the directory if missing
+
+set undofile
+set undoreload=10000
+
+# setting swap directory, // at the end tells Vim to use unique filenames
+&directory = my_state_dir .. '/swap//'
+mkdir(&directory, 'p')        # create the directory if missing
+
+# setting backup directory, // at the end tells Vim to use unique filenames
+&backupdir = my_state_dir .. '/backup//'
+mkdir(&backupdir, 'p')        # create the directory if missing
+set backup
+
+
+# You can split a window into sections by typing `:split` or `:vsplit`.
+# Display cursorline and cursorcolumn ONLY in active window.
+augroup cursor_off
+    autocmd!
+    autocmd WinLeave * set nocursorline nocursorcolumn
+    autocmd WinEnter * set cursorline cursorcolumn
+augroup END
+
 # }}}
 
 
@@ -273,7 +369,9 @@ if has('gui_running')
 
     # Set a custom font you have installed on your computer.
     # Syntax: <font_name>\ <weight>\ <size>
-    set guifont=Monospace\ Regular\ 12
+    # set guifont=CamingoCode:h14
+
+    set guifont=BlexMono\ Nerd\ Font\ Mono:h14
 
     # Display more of the file by default.
     # Hide the toolbar.
@@ -299,6 +397,9 @@ if has('gui_running')
         \else<Bar>
         \set guioptions+=mTr<Bar>
         \endif<CR>
+
+    # emter fullscreen in GUI Mode
+    set fullscreen
 
 endif
 
